@@ -4,10 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Geometry Dash</title>
-    <!-- Icono que identifica el sitio en la pestaña del navegador. -->
     <link rel="icon" type="image/png" href="https://cdn2.steamgriddb.com/icon/750ed96f0d56d3346cda66d24bc0cbd5/32/256x256.png">
     <style>
-/* Variables del tema para ajustar colores de forma centralizada. */
 :root {
     --bg: #0d0d0d;
     --panel: rgba(255, 255, 255, 0.08);
@@ -15,10 +13,18 @@
     --muted: rgba(244, 244, 244, 0.72);
     --accent: #7cc7ff;
     --shadow: rgba(0, 0, 0, 0.3);
+    --success: #7ee0a3;
+    --warning: #ffd479;
+    --border: rgba(255, 255, 255, 0.2);
+    --motion-fast: 180ms;
+    --motion-normal: 220ms;
+    --layer-game: 1;
+    --layer-loading: 10000;
+    --layer-notice: 10001;
+    --layer-link: 9999;
     color-scheme: dark;
 }
 
-/* El juego ocupa la ventana completa y evita desplazamientos exteriores. */
 html, body {
     margin: 0;
     padding: 0;
@@ -35,7 +41,6 @@ body {
     color: var(--text);
 }
 
-/* Mantiene el juego a pantalla completa detrás del indicador de carga. */
 iframe {
     position: fixed;
     inset: 0;
@@ -43,10 +48,9 @@ iframe {
     height: 100vh;
     border: none;
     background: var(--bg);
-    z-index: 1;
+    z-index: var(--layer-game);
 }
 
-/* Capa accesible que informa mientras el contenido remoto se carga. */
 #loading {
     position: fixed;
     inset: 0;
@@ -57,23 +61,20 @@ iframe {
     gap: 14px;
     background: var(--bg);
     color: var(--text);
-    z-index: 10000;
+    z-index: var(--layer-loading);
     opacity: 1;
     transition: opacity 700ms ease-in-out;
 }
 
-/* Desvanece el indicador sin interceptar interacciones al comenzar la salida. */
 #loading.fade-out {
     opacity: 0;
     pointer-events: none;
 }
 
-/* Detiene el trabajo de animación en cuanto empieza a desaparecer la capa. */
 #loading.fade-out .spinner {
     animation: none;
 }
 
-/* Círculo visual que representa el estado de carga. */
 .spinner {
     width: 38px;
     height: 38px;
@@ -83,7 +84,6 @@ iframe {
     animation: spin 0.8s linear infinite;
 }
 
-/* Aviso de conexión informativo, sin bloquear el juego. */
 #connection-message {
     position: fixed;
     left: 50%;
@@ -92,24 +92,38 @@ iframe {
     padding: 0.65rem 1rem;
     background: rgba(13, 13, 13, 0.9);
     color: var(--text);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    border: 1px solid var(--border);
     border-radius: 4px;
-    z-index: 10001;
+    z-index: var(--layer-notice);
     pointer-events: none;
     opacity: 0;
-    transition: opacity 180ms ease;
+    transition: opacity var(--motion-fast) ease, border-color var(--motion-fast) ease;
+    box-shadow: 0 4px 14px var(--shadow);
 }
 
 #connection-message.visible {
     opacity: 1;
+    animation: notice-in var(--motion-normal) ease-out;
 }
 
-/* Animación continua del círculo de carga. */
+/* Connection states add feedback without changing the page layout. */
+body[data-connection="online"] #connection-message {
+    border-color: var(--success);
+}
+
+body[data-connection="offline"] #connection-message {
+    border-color: var(--warning);
+}
+
+@keyframes notice-in {
+    from { transform: translate(-50%, 5px); }
+    to { transform: translate(-50%, 0); }
+}
+
 @keyframes spin {
     to { transform: rotate(360deg); }
 }
 
-/* Presentación y posición del acceso al repositorio. */
 #github-logo {
     position: fixed;
     bottom: 14px;
@@ -118,12 +132,15 @@ iframe {
     height: 70px;
     padding: 8px;
     cursor: pointer;
-    z-index: 9999;
+    z-index: var(--layer-link);
+    --magnet-x: 0px;
+    --magnet-y: 0px;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.45));
     transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    transform: translate(var(--magnet-x), var(--magnet-y));
     display: block;
 }
 
-/* Oculta el enlace al repositorio hasta que el juego haya cargado. */
 #github-link {
     visibility: hidden;
 }
@@ -132,16 +149,15 @@ iframe {
     visibility: visible;
 }
 
-/* Hace visible el foco para quienes navegan con teclado. */
 #github-link:focus-visible {
     outline: 2px solid var(--accent);
     outline-offset: 4px;
 }
 
-/* Realce visual al pasar el cursor o al enfocar el logo. */
 #github-logo:hover,
 #github-logo:focus-visible {
-    transform: translateY(-2px) scale(1.05);
+    transform: translate(var(--magnet-x), calc(var(--magnet-y) - 2px)) scale(1.05);
+    filter: drop-shadow(0 6px 11px rgba(0, 0, 0, 0.55));
 }
 
 #github-logo:focus-visible {
@@ -149,7 +165,6 @@ iframe {
     outline-offset: 4px;
 }
 
-/* Respeta la preferencia del usuario de reducir animaciones. */
 @media (prefers-reduced-motion: reduce) {
     .spinner,
     #github-logo,
@@ -160,55 +175,52 @@ iframe {
     }
 }
 
-/* Reduce tamaños y espacios en dispositivos con pantallas pequeñas. */
-@media (max-width: 640px) {
-    #loading {
-        font-size: 0.85rem;
-        letter-spacing: 0.06em;
-    }
-
-    #loading .loading-content {
-        gap: 0.65rem;
-        padding: 0.7rem 1rem;
-    }
-
-    #github-logo {
-        width: 54px;
-        height: 54px;
-        bottom: 10px;
-        right: 10px;
-    }
-}
 </style>
 </head>
 <body>
-<!-- Marco del juego con nombre accesible y permiso para pantalla completa. -->
-<iframe id="game-frame" src="https://garbsoftball.com/games/geo/index.html" allowfullscreen loading="eager" title="Geometry Dash webport" aria-label="Geometry Dash webport"></iframe>
-<!-- Estado de carga anunciado por lectores de pantalla. -->
+<iframe id="game-frame" src="https://garbsoftball.com/games/geo/index.html" allow="autoplay; fullscreen; gamepad" allowfullscreen loading="eager" title="Geometry Dash webport" aria-label="Geometry Dash webport"></iframe>
 <div id="loading" role="status" aria-live="polite">
     <div class="spinner" aria-hidden="true"></div>
-    <span aria-label="Loading...">Loading<span id="loading-dots" aria-hidden="true">.</span></span>
+    <span aria-label="Conectando...">Conectando<span id="loading-dots" aria-hidden="true">.</span></span>
 </div>
 <div id="connection-message" role="status" aria-live="polite" aria-hidden="true" hidden>Sin conexión a Internet</div>
-
-<!-- Enlace externo al repositorio, que se muestra después de la carga. -->
 <a id="github-link" href="https://github.com/Ale7208/Geometry-Dash-webport/" target="_blank" rel="noreferrer noopener" aria-label="Ver el repositorio de GitHub del proyecto" aria-hidden="true">
     <img id="github-logo" src="https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c2/GitHub_Invertocat_Logo.svg/250px-GitHub_Invertocat_Logo.svg.png" alt="GitHub">
 </a>
 
-<!-- Si JavaScript está desactivado, no dejes la capa de carga sobre el juego. -->
 <noscript><style>#loading { display: none; }</style></noscript>
 
 <script>
-// Referencias a los elementos de la interfaz.
 const loading = document.getElementById('loading');
 const loadingDots = document.getElementById('loading-dots');
-const loadingMessage = loading.querySelector('span[aria-label="Loading..."]');
+const loadingMessage = loading.querySelector('span[aria-label="Conectando..."]');
 const connectionMessage = document.getElementById('connection-message');
 const gameFrame = document.getElementById('game-frame');
 const githubLink = document.getElementById('github-link');
+const githubLogo = document.getElementById('github-logo');
 
-// Anima los puntos mientras se muestra la pantalla de carga.
+// Keep the current network state available to styles and future enhancements.
+function setConnectionState(state) {
+    document.body.dataset.connection = state;
+}
+
+document.addEventListener('click', function () {
+    gameFrame.focus();
+});
+
+document.addEventListener('mousemove', function (event) {
+    const rect = githubLogo.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const distanceX = event.clientX - centerX;
+    const distanceY = event.clientY - centerY;
+    const radius = 180;
+    const distance = Math.hypot(distanceX, distanceY);
+    const strength = Math.max(0, 1 - distance / radius);
+    githubLogo.style.setProperty('--magnet-x', `${distanceX * strength * 0.12}px`);
+    githubLogo.style.setProperty('--magnet-y', `${distanceY * strength * 0.12}px`);
+});
+
 let dotCount = 1;
 const dotsInterval = setInterval(function () {
     dotCount = dotCount % 3 + 1;
@@ -216,18 +228,13 @@ const dotsInterval = setInterval(function () {
 }, 500);
 
 let loadingHidden = false;
-let settleTimeout = null;
 let safetyTimeout = null;
 let hideTimeout = null;
-let pendingTransitionEnd = null;
 let connectionMessageTimeout = null;
 let connectionMessageHideTimeout = null;
 
 function clearTimer(timerName) {
-    if (timerName === 'settle' && settleTimeout !== null) {
-        clearTimeout(settleTimeout);
-        settleTimeout = null;
-    } else if (timerName === 'safety' && safetyTimeout !== null) {
+    if (timerName === 'safety' && safetyTimeout !== null) {
         clearTimeout(safetyTimeout);
         safetyTimeout = null;
     } else if (timerName === 'hide' && hideTimeout !== null) {
@@ -265,61 +272,57 @@ function showConnectionMessage(message) {
 }
 
 function handleOffline() {
+    setConnectionState('offline');
     showConnectionMessage('Sin conexión a Internet');
 }
 
 function handleOnline() {
+    setConnectionState('online');
     showConnectionMessage('Conexión a Internet restaurada');
 }
 
-// Oculta la capa y revela el enlace al repositorio.
+function getConnectionState() {
+    return document.body.dataset.connection || (navigator.onLine ? 'online' : 'offline');
+}
+
 function hideLoadingScreen() {
     if (loadingHidden) return;
     loadingHidden = true;
     clearInterval(dotsInterval);
-    clearTimer('settle');
     clearTimer('safety');
     loading.classList.add('fade-out');
+    githubLink.classList.add('visible');
+    githubLink.removeAttribute('aria-hidden');
 
     let finished = false;
     function finishHiding() {
         if (finished) return;
         finished = true;
         clearTimer('hide');
-        clearTimer('settle');
         clearTimer('safety');
         loading.removeEventListener('transitionend', finishHiding);
-        if (pendingTransitionEnd === finishHiding) pendingTransitionEnd = null;
         loading.style.display = 'none';
         loading.setAttribute('aria-hidden', 'true');
-        githubLink.classList.add('visible');
-        githubLink.removeAttribute('aria-hidden');
     }
-    pendingTransitionEnd = finishHiding;
     loading.addEventListener('transitionend', finishHiding);
     hideTimeout = setTimeout(finishHiding, 750);
 }
 
-// El load solo inicia un breve periodo de estabilización; al ser contenido
-// remoto no es posible inspeccionar de forma segura si el juego está listo.
 gameFrame.addEventListener('load', function () {
     clearTimer('safety');
-    clearTimer('settle');
-    settleTimeout = setTimeout(function () {
-        settleTimeout = null;
-        hideLoadingScreen();
-    }, 1200);
+    if (navigator.onLine) setConnectionState('online');
+    gameFrame.focus();
+    setTimeout(hideLoadingScreen, 1500);
 });
 
 window.addEventListener('offline', handleOffline);
 window.addEventListener('online', handleOnline);
 
-// Informa del estado inicial y limita la pantalla de carga ante cargas lentas.
 if (!navigator.onLine) handleOffline();
 safetyTimeout = setTimeout(function () {
     safetyTimeout = null;
     hideLoadingScreen();
-}, 30000);
+}, 60000);
 </script>
 
 </body>
