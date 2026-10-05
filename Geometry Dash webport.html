@@ -1,6 +1,5 @@
 <!DOCTYPE html><html><head>
 <base href="https://cdn.jsdelivr.net/gh/linkawaken1979-alt/geometry-dash-wasm@main/">
-<!-- Bloque 1: decodificado -->
 <script>
 window.__gdProxyBase = 'https://api.sngdu.com/';
 window.__gdProxyBuild = function(target) {
@@ -142,9 +141,15 @@ window.__gdProxyTarget = function(input) {
 })();
 </script>
 
-<!-- Bloque 3: decodificado -->
 <script>
 window.__framed = window.self !== window.top;
+window.__gdAllowUnload = false;
+
+document.addEventListener('click', function(e) {
+    var button = e.target && e.target.closest && e.target.closest('button');
+    if (button && button.textContent.trim() === 'Reintentar')
+        window.__gdAllowUnload = true;
+}, true);
 
 window.addEventListener("message", function(e) {
 
@@ -192,8 +197,7 @@ document.addEventListener("click", function() {
 
 });
 </script>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><meta name="color-scheme" content="dark"><meta name="theme-color" content="#000000"><link rel="icon" href="ref/logo.png"><title>Geometry Dash WASM</title><style>html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #000; } #canvas { position: fixed; inset: 0; display: block; width: 100vw; height: 100vh; height: 100dvh; outline: none; user-select: none; touch-action: none; } #loading-text { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 999999; font-size: 48px; font-family: cursive; font-weight: bold; pointer-events: none; background: linear-gradient(270deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8f00ff); background-size: 400% 400%; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: rainbow 3s ease infinite; } @keyframes rainbow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } } #errOverlay { position: fixed; left: 50%; top: 100px; transform: translateX(-50%); z-index: 1000000; display: none; max-width: 90vw; padding: 12px; color: white; background: #1a0000; font: 14px monospace; white-space: pre-wrap; } #errOverlay.on { display: block; }</style></head><body><canvas id="canvas" width="1920" height="1080" tabindex="0"></canvas><div id="loading-text" role="status" style="color: white; font-size: 48px; font-family: cursive; text-align: center; margin-top: 20px;"> LOADING... </div><div id="errOverlay" role="alert"></div>
-<!-- Bloque 4: decodificado -->
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><meta name="color-scheme" content="dark"><meta name="theme-color" content="#000000"><link rel="icon" href="https://cdn2.steamgriddb.com/icon/750ed96f0d56d3346cda66d24bc0cbd5/32/256x256.png"><title>Geometry Dash</title><style>html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #000; } #canvas { position: fixed; inset: 0; display: block; width: 100vw; height: 100vh; height: 100dvh; outline: none; user-select: none; touch-action: none; } #loading-text { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 999999; font-size: 48px; font-family: cursive; font-weight: bold; pointer-events: none; background: linear-gradient(270deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8f00ff); background-size: 400% 400%; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: rainbow 3s ease infinite; } @keyframes rainbow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } } #errOverlay { position: fixed; left: 50%; top: 100px; transform: translateX(-50%); z-index: 1000000; display: none; max-width: 90vw; padding: 12px; color: white; background: #1a0000; font: 14px monospace; white-space: pre-wrap; } #errOverlay.on { display: block; }</style></head><body><canvas id="canvas" width="1920" height="1080" tabindex="0"></canvas><div id="loading-text" role="status" style="color: white; font-size: 48px; font-family: cursive; text-align: center; margin-top: 20px;"> LOADING... </div><div id="errOverlay" role="alert"></div>
 <script>
 try {
     Error.stackTraceLimit = 400;
@@ -308,13 +312,6 @@ var GD_BUILD_ID = 'a6f253af4d4bd0a4';
 
 var GD_ASSET_CACHE = 'gdwasm-assets';
 
-try {
-    if (window.caches)
-        caches.delete(GD_ASSET_CACHE).catch(function() {});
-} catch (e) {}
-
-
-
 var GD_SPLIT_COUNTS = {
     wasm: 4,
     data: 15
@@ -323,9 +320,36 @@ var GD_SPLIT_COUNTS = {
 var loadingText = document.querySelector('#loading-text');
 let loadedBytes = 0;
 async function fetchWithProgress(url) {
-    const response = await fetch(url, {
-        cache: 'no-store'
-    });
+    let response;
+    let assetCache = null;
+    if (window.caches) {
+        try {
+            assetCache = await caches.open(GD_ASSET_CACHE);
+            const versionKey = new Request(new URL('/__gd_asset_build__', location.origin).href);
+            const versionResponse = await assetCache.match(versionKey);
+            const cachedBuild = versionResponse ? await versionResponse.text() : null;
+            if (cachedBuild !== GD_BUILD_ID) {
+                const keys = await assetCache.keys();
+                await Promise.all(keys.map(function(key) {
+                    return assetCache.delete(key);
+                }));
+                await assetCache.put(versionKey, new Response(GD_BUILD_ID));
+            }
+            response = await assetCache.match(url);
+        } catch (e) {
+            assetCache = null;
+        }
+    }
+    if (!response) {
+        response = await fetch(url, {
+            cache: 'no-store'
+        });
+        if (response.ok && assetCache) {
+            try {
+                await assetCache.put(url, response.clone());
+            } catch (e) {}
+        }
+    }
     if (!response.ok) throw new Error(url + ' HTTP ' + response.status);
     const chunks = [];
     let received = 0;
@@ -508,9 +532,11 @@ function gdClearCache() {
 
     Promise.all(jobs).then(
         function() {
+            window.__gdAllowUnload = true;
             location.reload();
         },
         function() {
+            window.__gdAllowUnload = true;
             location.reload();
         }
     );
@@ -763,6 +789,13 @@ function scheduleSave() {
         say('[persist] save failed: ' + e);
     }
 }
+window.addEventListener('beforeunload', function(e) {
+    if (window.__gdAllowUnload || !window.__gdGameStarted)
+        return;
+    scheduleSave();
+    e.preventDefault();
+    e.returnValue = '';
+});
 setInterval(scheduleSave, 10000);
 document.addEventListener('visibilitychange', function() {
     if (document.hidden) scheduleSave();
@@ -1200,7 +1233,7 @@ var Module = {
                 if (ov) {
 
                     ov.textContent =
-                        'Failed to load WASM parts: ' + e;
+                        'Error al cargar las partes de WASM: ' + e;
 
                     ov.classList.add('on');
                 }
@@ -1315,9 +1348,9 @@ var Module = {
                                     if (ov) {
 
                                         ov.textContent =
-                                            'The game crashed (' +
+                                            'El juego se bloqueó (' +
                                             e +
-                                            '). Reload the page to keep playing. Open it with ?debug to see logs.';
+                                            '). Recarga la página para seguir jugando. Ábrela con ?debug para ver los registros.';
 
                                         ov.classList.add('on');
                                     }
@@ -1415,7 +1448,7 @@ function gdStart() {
                 var loading = document.getElementById('loading-text');
                 if (loading) loading.remove();
                 var overlay = document.getElementById('errOverlay');
-                overlay.textContent = 'Failed to load game: ' + e;
+                overlay.textContent = 'Error al cargar el juego: ' + e;
                 overlay.classList.add('on');
             });
     }
@@ -1902,7 +1935,7 @@ window.addEventListener('DOMContentLoaded', gdStart, {
         if (!gl)
 
             err(
-                'WebGL2 not available - use Chrome/Edge 137+ with hardware acceleration.'
+                'WebGL2 no está disponible. Usa Chrome/Edge 137+ con aceleración por hardware.'
             );
 
         if (!window.crossOriginIsolated)
@@ -1914,7 +1947,7 @@ window.addEventListener('DOMContentLoaded', gdStart, {
     } catch (e) {
 
         err(
-            'Feature check failed: ' + e
+            'Falló la comprobación de compatibilidad: ' + e
         );
     }
 
@@ -2102,7 +2135,7 @@ window.addEventListener('DOMContentLoaded', gdStart, {
             )
 
                 err(
-                    'Runtime error: ' + e.message
+                    'Error de ejecución: ' + e.message
                 );
 
         }
