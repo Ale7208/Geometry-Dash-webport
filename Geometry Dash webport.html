@@ -197,13 +197,13 @@ document.addEventListener("click", function() {
 
 });
 </script>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><meta name="color-scheme" content="dark"><meta name="theme-color" content="#000000"><link rel="icon" href="https://cdn2.steamgriddb.com/icon/750ed96f0d56d3346cda66d24bc0cbd5/32/256x256.png"><title>Geometry Dash</title><style>html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #000; } #canvas { position: fixed; inset: 0; display: block; width: 100vw; height: 100vh; height: 100dvh; outline: none; user-select: none; touch-action: none; } #loading-text { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 999999; font-size: 48px; font-family: cursive; font-weight: bold; pointer-events: none; background: linear-gradient(270deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8f00ff); background-size: 400% 400%; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: rainbow 3s ease infinite; } @keyframes rainbow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } } #errOverlay { position: fixed; left: 50%; top: 100px; transform: translateX(-50%); z-index: 1000000; display: none; max-width: 90vw; padding: 12px; color: white; background: #1a0000; font: 14px monospace; white-space: pre-wrap; } #errOverlay.on { display: block; }</style></head><body><canvas id="canvas" width="1920" height="1080" tabindex="0"></canvas><div id="loading-text" role="status" style="color: white; font-size: 48px; font-family: cursive; text-align: center; margin-top: 20px;"> LOADING... </div><div id="errOverlay" role="alert"></div>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no"><meta name="color-scheme" content="dark"><meta name="theme-color" content="#000000"><link rel="icon" href="https://cdn2.steamgriddb.com/icon/750ed96f0d56d3346cda66d24bc0cbd5/32/256x256.png"><title>Geometry Dash</title><style>html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #000; } #canvas { position: fixed; inset: 0; display: block; width: 100vw; height: 100vh; height: 100dvh; outline: none; user-select: none; touch-action: none; } #loading-text { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 999999; font-size: 48px; font-family: cursive; font-weight: bold; pointer-events: none; background: linear-gradient(270deg, #ff0000, #ff7f00, #ffff00, #00ff00, #0000ff, #4b0082, #8f00ff); background-size: 400% 400%; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; animation: rainbow 3s ease infinite; } @keyframes rainbow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } } #errOverlay { position: fixed; left: 50%; top: 100px; transform: translateX(-50%); z-index: 1000000; display: none; max-width: 90vw; padding: 12px; color: white; background: #1a0000; font: 14px monospace; white-space: pre-wrap; } #errOverlay.on { display: block; }</style></head><body><canvas id="canvas" width="1920" height="1080" tabindex="0"></canvas><div id="loading-text" role="status" style="color: white; font-size: 48px; font-family: cursive; text-align: center; margin-top: 20px;"> CARGANDO... </div><div id="errOverlay" role="alert"></div>
 <script>
-try {
-    Error.stackTraceLimit = 400;
-} catch (e) {}
-
 var GD_DEBUG = /[?&]debug(=|&|$)/.test(location.search);
+
+try {
+    Error.stackTraceLimit = GD_DEBUG ? 400 : 10;
+} catch (e) {}
 
 if (!GD_DEBUG) {
 
@@ -397,31 +397,17 @@ function gdLoadSplitFile(which, onProgress) {
 
     var count = GD_SPLIT_COUNTS[which];
 
-    var chunks = [];
+    var chunks = new Array(count);
     var loaded = 0;
 
-    function loadPart(i) {
+    var nextPart = 1;
 
-        if (i > count) {
+    function loadParts() {
 
-            var total = 0;
+        var i = nextPart++;
 
-            for (var x = 0; x < chunks.length; x++)
-                total += chunks[x].byteLength;
-
-            var combined = new Uint8Array(total);
-
-            var offset = 0;
-
-            for (var y = 0; y < chunks.length; y++) {
-
-                combined.set(chunks[y], offset);
-
-                offset += chunks[y].byteLength;
-            }
-
-            return combined.buffer;
-        }
+        if (i > count)
+            return Promise.resolve();
 
         var url = base + '.part' + String(i).padStart(3, '0');
 
@@ -429,20 +415,39 @@ function gdLoadSplitFile(which, onProgress) {
 
         return fetchWithProgress(url).then(function(buf) {
 
-            var chunk = new Uint8Array(buf);
+            chunks[i - 1] = new Uint8Array(buf);
 
-            chunks.push(chunk);
-
-            loaded += chunk.byteLength;
+            loaded += chunks[i - 1].byteLength;
 
             if (onProgress)
                 onProgress(loaded, GD_SIZE_HINT[which]);
 
-            return loadPart(i + 1);
+            return loadParts();
         });
     }
 
-    return loadPart(1);
+    var workers = [];
+
+    for (var w = 0; w < Math.min(4, count); w++)
+        workers.push(loadParts());
+
+    return Promise.all(workers).then(function() {
+
+        var total = 0;
+
+        for (var x = 0; x < chunks.length; x++)
+            total += chunks[x].byteLength;
+
+        var combined = new Uint8Array(total);
+        var offset = 0;
+
+        for (var y = 0; y < chunks.length; y++) {
+            combined.set(chunks[y], offset);
+            offset += chunks[y].byteLength;
+        }
+
+        return combined.buffer;
+    });
 }
 
 function gdInstallSplitFetch() {
@@ -837,7 +842,7 @@ function gdProgressTick() {
     }
 }
 
-setInterval(gdProgressTick, 200);
+var gdProgressIntervalId = setInterval(gdProgressTick, 200);
 
 document.addEventListener(
     'visibilitychange',
@@ -856,6 +861,7 @@ document.addEventListener(
     var lastT = performance.now();
     var lastN = 0;
     var primed = false;
+    var gdFrameAnimationId;
 
     function tick(now) {
 
@@ -889,6 +895,10 @@ document.addEventListener(
                     window.__gdGotFrame = true;
 
                     setProgress(100);
+
+                    cancelAnimationFrame(gdFrameAnimationId);
+                    clearInterval(gdProgressIntervalId);
+                    return;
                 }
             } else if (!primed) {
 
@@ -898,10 +908,10 @@ document.addEventListener(
             lastT = now;
         }
 
-        requestAnimationFrame(tick);
+        gdFrameAnimationId = requestAnimationFrame(tick);
     }
 
-    requestAnimationFrame(tick);
+    gdFrameAnimationId = requestAnimationFrame(tick);
 
 })();
 
@@ -1007,6 +1017,9 @@ function dumpRegs() {
 }
 
 function gdErrStack(what, e, reason) {
+
+    if (!GD_DEBUG)
+        return;
 
     var msg = what + (reason || '');
 
@@ -2140,6 +2153,29 @@ window.addEventListener('DOMContentLoaded', gdStart, {
 
         }
     );
+
+    var gdFullscreenTriggered = false;
+
+    function gdRequestFullscreenOnInput() {
+
+        if (!window.__gdGotFrame || gdFullscreenTriggered)
+            return;
+
+        gdFullscreenTriggered = true;
+        window.removeEventListener('pointerdown', gdRequestFullscreenOnInput);
+        window.removeEventListener('keydown', gdRequestFullscreenOnInput);
+
+        try {
+            document.documentElement.requestFullscreen();
+        } catch (_) {}
+
+        try {
+            navigator.keyboard.lock(['Escape']);
+        } catch (_) {}
+    }
+
+    window.addEventListener('pointerdown', gdRequestFullscreenOnInput);
+    window.addEventListener('keydown', gdRequestFullscreenOnInput);
 
 })();
 </script>
