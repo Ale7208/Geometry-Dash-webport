@@ -37,14 +37,14 @@
 
 Para ejecutar Geometry Dash Webport, necesitas:
 
-* 🌐 Un navegador web moderno y actualizado.
-* 🟨 JavaScript habilitado.
-* 💻 Una computadora compatible.
-* 📡 Conexión a Internet, los recursos del juego requieren cargarse desde servidores externos.
+*  Un navegador web moderno y actualizado.
+*  JavaScript habilitado.
+*  Una computadora compatible.
+*  Conexión a Internet, los recursos del juego requieren cargarse desde servidores externos.
 
 ---
 
-## 🌐 Compatibilidad
+##  Compatibilidad
 
 Geometry Dash Webport está diseñado para funcionar en navegadores web modernos, entre ellos:
 
@@ -60,7 +60,7 @@ Geometry Dash Webport está diseñado para funcionar en navegadores web modernos
 
 ---
 
-## 🎮 Información del juego
+##  Información del juego
 
 | Característica               | Detalles                            |
 | ---------------------------- | ----------------------------------- |
@@ -77,11 +77,11 @@ Geometry Dash Webport está diseñado para funcionar en navegadores web modernos
 
 Si experimentas problemas al ejecutar el juego, puedes probar las siguientes soluciones:
 
-* **🖥️ Pantalla en blanco:** Actualiza la página o vuelve a abrir el archivo HTML.
-* **⏳ Carga infinita:** Comprueba tu conexión a Internet y espera unos instantes.
-* **🐌 Bajo rendimiento:** Cierra las aplicaciones innecesarias y prueba con otro navegador.
-* **🎮 El juego no inicia:** Comprueba que JavaScript esté habilitado e intenta utilizar un navegador actualizado.
-* **❌ Errores al cargar:** Verifica que todos los archivos del ZIP se hayan extraído correctamente.
+* ** Pantalla en blanco:** Actualiza la página o vuelve a abrir el archivo HTML.
+* ** Carga infinita:** Comprueba tu conexión a Internet y espera unos instantes.
+* ** Bajo rendimiento:** Cierra las aplicaciones innecesarias y prueba con otro navegador.
+* ** El juego no inicia:** Comprueba que JavaScript esté habilitado e intenta utilizar un navegador actualizado.
+* ** Errores al cargar:** Verifica que todos los archivos del ZIP se hayan extraído correctamente.
 
 > Si los problemas persisten, es posible que estén relacionados con el archivo, el navegador o el servicio utilizado para ejecutar el webport.
 
