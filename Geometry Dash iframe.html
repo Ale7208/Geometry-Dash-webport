@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Geometry Dash</title>
+    <link rel="preconnect" href="https://garbsoftball.com">
+    <link rel="icon" type="image/png" href="https://cdn2.steamgriddb.com/icon/750ed96f0d56d3346cda66d24bc0cbd5/32/256x256.png">
+    <style>
+:root {
+    --bg: #0d0d0d;
+    --panel: rgba(255, 255, 255, 0.08);
+    --text: #f4f4f4;
+    --muted: rgba(244, 244, 244, 0.72);
+    --accent: #7cc7ff;
+    --shadow: rgba(0, 0, 0, 0.3);
+    --success: #7ee0a3;
+    --warning: #ffd479;
+    --border: rgba(255, 255, 255, 0.2);
+    --motion-fast: 180ms;
+    --motion-normal: 220ms;
+    --layer-game: 1;
+    --layer-loading: 10000;
+    --layer-notice: 10001;
+    --layer-link: 9999;
+    color-scheme: dark;
+}
+
+html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: var(--bg);
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+body {
+    position: relative;
+    min-height: 100vh;
+    color: var(--text);
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+img,
+svg {
+    -webkit-user-drag: none;
+}
+
+iframe {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    border: none;
+    background: var(--bg);
+    z-index: var(--layer-game);
+}
+
+#loading {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    background: var(--bg);
+    color: var(--text);
+    z-index: var(--layer-loading);
+    opacity: 1;
+    transition: opacity 700ms ease-in-out;
+}
+
+#loading.fade-out {
+    opacity: 0;
+    pointer-events: none;
+}
+
+#loading.fade-out .spinner {
+    animation: none;
+}
+
+.spinner {
+    width: 38px;
+    height: 38px;
+    border: 4px solid rgba(255, 255, 255, 0.2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+#connection-message {
+    position: fixed;
+    left: 50%;
+    bottom: 20px;
+    transform: translateX(-50%);
+    padding: 0.65rem 1rem;
+    background: rgba(13, 13, 13, 0.9);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    z-index: var(--layer-notice);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity var(--motion-fast) ease, border-color var(--motion-fast) ease;
+    box-shadow: 0 4px 14px var(--shadow);
+}
+
+#connection-message.visible {
+    opacity: 1;
+    animation: notice-in var(--motion-normal) ease-out;
+}
+
+/* Connection states add feedback without changing the page layout. */
+body[data-connection="online"] #connection-message {
+    border-color: var(--success);
+}
+
+body[data-connection="offline"] #connection-message {
+    border-color: var(--warning);
+}
+
+@keyframes notice-in {
+    from { transform: translate(-50%, 5px); }
+    to { transform: translate(-50%, 0); }
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+#github-logo {
+    position: fixed;
+    bottom: 14px;
+    right: 14px;
+    width: 70px;
+    height: 70px;
+    padding: 8px;
+    cursor: pointer;
+    z-index: var(--layer-link);
+    --magnet-x: 0px;
+    --magnet-y: 0px;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.45));
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    transform: translate(var(--magnet-x), var(--magnet-y));
+    display: block;
+}
+
+#github-link {
+    visibility: hidden;
+}
+
+#github-link.visible {
+    visibility: visible;
+}
+
+#github-link:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 4px;
+}
+
+#github-logo:hover,
+#github-logo:focus-visible {
+    transform: translate(var(--magnet-x), calc(var(--magnet-y) - 2px)) scale(1.05);
+    filter: drop-shadow(0 6px 11px rgba(0, 0, 0, 0.55));
+}
+
+#github-logo:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .spinner,
+    #github-logo,
+    #loading,
+    #connection-message {
+        animation: none !important;
+        transition: none !important;
+    }
+}
+
+</style>
+</head>
+<body>
+<iframe id="game-frame" src="https://truffled.lol/games/geo/index.html" sandbox="allow-scripts allow-same-origin allow-pointer-lock allow-popups" allow="autoplay; fullscreen; gamepad" allowfullscreen loading="eager" title="Geometry Dash webport" aria-label="Geometry Dash webport"></iframe>
+<div id="loading" role="status" aria-live="polite">
+    <div class="spinner" aria-hidden="true"></div>
+    <span aria-label="Conectando...">Conectando<span id="loading-dots" aria-hidden="true">.</span></span>
+</div>
+<div id="connection-message" role="status" aria-live="polite" aria-hidden="true" hidden>Sin conexión a Internet</div>
+<a id="github-link" href="https://github.com/Ale7208/Geometry-Dash-webport/" target="_blank" rel="noreferrer noopener" aria-label="Ver el repositorio de GitHub del proyecto" aria-hidden="true">
+    <img id="github-logo" src="https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c2/GitHub_Invertocat_Logo.svg/250px-GitHub_Invertocat_Logo.svg.png" alt="GitHub">
+</a>
+
+<noscript><style>#loading { display: none; }</style></noscript>
+
+<script>
+const loading = document.getElementById('loading');
+const loadingDots = document.getElementById('loading-dots');
+const loadingMessage = loading.querySelector('span[aria-label="Conectando..."]');
+const connectionMessage = document.getElementById('connection-message');
+const gameFrame = document.getElementById('game-frame');
+const githubLink = document.getElementById('github-link');
+const githubLogo = document.getElementById('github-logo');
+
+// Keep the current network state available to styles and future enhancements.
+function setConnectionState(state) {
+    document.body.dataset.connection = state;
+}
+
+document.addEventListener('click', function () {
+    gameFrame.focus();
+});
+
+document.addEventListener('dragstart', function (event) {
+    event.preventDefault();
+});
+
+document.addEventListener('mousemove', function (event) {
+    const rect = githubLogo.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const distanceX = event.clientX - centerX;
+    const distanceY = event.clientY - centerY;
+    const radius = 180;
+    const distance = Math.hypot(distanceX, distanceY);
+    const strength = Math.max(0, 1 - distance / radius);
+    githubLogo.style.setProperty('--magnet-x', `${distanceX * strength * 0.12}px`);
+    githubLogo.style.setProperty('--magnet-y', `${distanceY * strength * 0.12}px`);
+});
+
+let dotCount = 1;
+const dotsInterval = setInterval(function () {
+    dotCount = dotCount % 3 + 1;
+    loadingDots.textContent = '.'.repeat(dotCount);
+}, 500);
+
+let loadingHidden = false;
+let safetyTimeout = null;
+let hideTimeout = null;
+let connectionMessageTimeout = null;
+let connectionMessageHideTimeout = null;
+
+function clearTimer(timerName) {
+    if (timerName === 'safety' && safetyTimeout !== null) {
+        clearTimeout(safetyTimeout);
+        safetyTimeout = null;
+    } else if (timerName === 'hide' && hideTimeout !== null) {
+        clearTimeout(hideTimeout);
+        hideTimeout = null;
+    } else if (timerName === 'connection' && connectionMessageTimeout !== null) {
+        clearTimeout(connectionMessageTimeout);
+        connectionMessageTimeout = null;
+    } else if (timerName === 'connection-hide' && connectionMessageHideTimeout !== null) {
+        clearTimeout(connectionMessageHideTimeout);
+        connectionMessageHideTimeout = null;
+    }
+}
+
+function showConnectionMessage(message) {
+    clearTimer('connection');
+    clearTimer('connection-hide');
+
+    connectionMessage.textContent = message;
+    connectionMessage.hidden = false;
+    connectionMessage.setAttribute('aria-hidden', 'false');
+    requestAnimationFrame(function () {
+        connectionMessage.classList.add('visible');
+    });
+
+    connectionMessageTimeout = setTimeout(function () {
+        connectionMessageTimeout = null;
+        connectionMessage.setAttribute('aria-hidden', 'true');
+        connectionMessage.classList.remove('visible');
+        connectionMessageHideTimeout = setTimeout(function () {
+            connectionMessageHideTimeout = null;
+            connectionMessage.hidden = true;
+        }, 180);
+    }, 5000);
+}
+
+function handleOffline() {
+    setConnectionState('offline');
+    showConnectionMessage('Sin conexión a Internet');
+}
+
+function handleOnline() {
+    setConnectionState('online');
+    showConnectionMessage('Conexión a Internet restaurada');
+}
+
+function getConnectionState() {
+    return document.body.dataset.connection || (navigator.onLine ? 'online' : 'offline');
+}
+
+function hideLoadingScreen() {
+    if (loadingHidden) return;
+    loadingHidden = true;
+    clearInterval(dotsInterval);
+    clearTimer('safety');
+    loading.classList.add('fade-out');
+    githubLink.classList.add('visible');
+    githubLink.removeAttribute('aria-hidden');
+
+    let finished = false;
+    function finishHiding() {
+        if (finished) return;
+        finished = true;
+        clearTimer('hide');
+        clearTimer('safety');
+        loading.removeEventListener('transitionend', finishHiding);
+        loading.style.display = 'none';
+        loading.setAttribute('aria-hidden', 'true');
+    }
+    loading.addEventListener('transitionend', finishHiding);
+    hideTimeout = setTimeout(finishHiding, 750);
+}
+
+gameFrame.addEventListener('load', function () {
+    clearTimer('safety');
+    if (navigator.onLine) setConnectionState('online');
+    gameFrame.focus();
+    setTimeout(hideLoadingScreen, 1500);
+});
+
+window.addEventListener('offline', handleOffline);
+window.addEventListener('online', handleOnline);
+window.addEventListener('focus', () => gameFrame.focus());
+window.addEventListener('beforeunload', function (e) {
+    e.preventDefault();
+    e.returnValue = '';
+});
+
+if (!navigator.onLine) handleOffline();
+safetyTimeout = setTimeout(function () {
+    safetyTimeout = null;
+    hideLoadingScreen();
+}, 60000);
+</script>
+
+</body>
+</html>
