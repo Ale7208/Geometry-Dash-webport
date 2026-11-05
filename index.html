@@ -1,5 +1,5 @@
-<!DOCTYPE html><html><head><base href="https://cdn.jsdelivr.net/gh/Ale7208/geometry-dash-wasm/"><title>Geometry Dash WASM</title>
-<meta name="description" content="A Geometry Dash webport that runs in your browser with no installation.">
+<!DOCTYPE html><html><head><base href="https://cdn.jsdelivr.net/gh/Ale7208/geometry-dash-wasm/"><title>Geometry Dash Webport</title>
+<meta name="description" content="A Geometry Dash Webport that runs in your browser with no installation.">
 <link rel="canonical" href="https://gd-webport.pages.dev/">
 <meta property="og:type" content="website">
 <meta property="og:title" content="Geometry Dash Webport">
@@ -21,7 +21,7 @@ try{new MutationObserver(function(ms){ms.forEach(function(m){var n=m.target;if(m
 <script>
 window.__gdScramjetOff=/[?&]noscramjet(=|&|$)/.test(location.search);
 window.__gdProxyFallbackBases=["https://gd-proxy.webdashers.workers.dev","https://cold-grass-d871.gn-math-business.workers.dev","https://webd.ktrio839.workers.dev"];
-window.__gdProxyBases=(function(){var d=["https://boomlings.ale720.workers.dev/?url=","https://boomlings.ale728.workers.dev/?url=","https://boomlings.ale7208.workers.dev/?url=","https://boomlings.ivan-makarov12341.workers.dev/?url="].concat(window.__gdProxyFallbackBases);try{var q=new URLSearchParams(location.search).get("proxy");if(q){try{localStorage.setItem("gdProxyBase",q);}catch(e){}return[q];}var s=localStorage.getItem("gdProxyBase");if(s)return[s].concat(d.filter(function(x){return x!==s;}));}catch(e){}return d;})();
+window.__gdProxyBases=(function(){var d=["https://boomlings.ale7208.workers.dev/?url=","https://boomlings.ivan-makarov12341.workers.dev/?url="].concat(window.__gdProxyFallbackBases);try{var q=new URLSearchParams(location.search).get("proxy");if(q){try{localStorage.setItem("gdProxyBase",q);}catch(e){}return[q];}var s=localStorage.getItem("gdProxyBase");if(s)return[s].concat(d.filter(function(x){return x!==s;}));}catch(e){}return d;})();
 window.__gdProxyBase=window.__gdProxyBases[0];
 window.__gdProxyPass=["googletagmanager","cloudflareinsights","jsdelivr","gstatic","googleapis","corsfix","corsproxy","allorigins","workers.dev"];
 window.__gdProxyTarget=function(u){var k="/__proxy?url=";if(typeof u!=="string")return null;for(var b=0;b<window.__gdProxyBases.length;b++)if(u.indexOf(window.__gdProxyBases[b])===0)return null;var i=u.indexOf(k);if(i>=0){if(i>0){try{var o=new URL(u.slice(0,i)).origin;if(o!==location.origin&&o!==new URL(document.baseURI).origin)return null;}catch(e){return null;}}var s=u.slice(i+k.length);try{return decodeURIComponent(s);}catch(e){return s;}}if(/^https?:\/\//i.test(u)){try{var w=new URL(u);if(w.origin===location.origin)return null;for(var p=0;p<window.__gdProxyPass.length;p++)if(w.hostname.indexOf(window.__gdProxyPass[p])>=0)return null;return u;}catch(e){return null;}}return null;};
@@ -1368,56 +1368,8 @@ gdStart();
     keys.clear(); Module.gdKeyState.fill(0); focusAcked = false;
     lastFrame = 0; frameSamples.length = 0;
   }
-  var autoPauseRequested = false;
-  function isLevelMusicPlaying() {
-    var audio = window.Module && window.Module.__gdAudio;
-    if (!audio || !audio.channels || !audio.sounds) return false;
-    for (var channelId in audio.channels) {
-      var channel = audio.channels[channelId];
-      var sound = channel && audio.sounds[channel.sound];
-      if (
-        sound &&
-        sound.len > 15000 &&
-        !channel.ended &&
-        !/menuLoop/i.test(String(sound.name || sound.path || ""))
-      ) {
-        if (!channel.paused && !channel.pausedByGroup) return true;
-      }
-    }
-    return false;
-  }
-  function autoPause() {
-    if (autoPauseRequested || !ready() ||
-        !document.body.classList.contains('playing') ||
-        !isLevelMusicPlaying()) return;
-    autoPauseRequested = true;
-    var escapeEvent = {
-      key: 'Escape',
-      code: 'Escape',
-      keyCode: 27,
-      which: 27,
-      bubbles: true,
-      cancelable: true
-    };
-    window.dispatchEvent(new KeyboardEvent('keydown', escapeEvent));
-    window.dispatchEvent(new KeyboardEvent('keyup', escapeEvent));
-  }
-  function resetAutoPause() {
-    autoPauseRequested = false;
-  }
-  window.addEventListener('blur', function () {
-    releaseAll();
-    autoPause();
-  });
-  window.addEventListener('focus', resetAutoPause);
-  document.addEventListener('visibilitychange', function () {
-    if (document.hidden) {
-      releaseAll();
-      autoPause();
-    } else {
-      resetAutoPause();
-    }
-  });
+  window.addEventListener('blur', releaseAll);
+  document.addEventListener('visibilitychange', function () { if (document.hidden) releaseAll(); });
   el.tabIndex = 0;
 })();
 
