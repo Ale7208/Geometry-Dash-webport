@@ -1,4 +1,4 @@
-# Geometry Dash webport
+# Geometry Dash Webport
 
 <img width="960" height="540" alt="In-game screenshot" src="https://github.com/user-attachments/assets/081fad5c-7e96-46fe-981a-7f54fb62e6df" />
 
@@ -54,7 +54,7 @@ The game can also be played on mobile phones. Performance, controls, and compati
 
 | Feature               | Details               |
 | --------------------- | --------------------- |
-| Name                  | Geometry Dash webport |
+| Name                  | Geometry Dash Webport |
 | Type                  | Webport / HTML        |
 | Geometry Dash version | 2.2091                |
 | Platform              | Web browser           |
