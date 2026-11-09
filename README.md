@@ -20,12 +20,12 @@ The online version is updated whenever changes are published.
 
 ### Using a downloaded copy?
 
+Keep in mind that a downloaded copy can also become outdated. I sometimes change the game's assets to make improvements, optimizations, and other tweaks, and an older copy may become incompatible with the new assets or with the current online version. When that happens, the game can look different or stop working as expected. If you run into that, try the online version first or download the latest [index.html](index.html).
+
 Downloaded files and forks don't update automatically. To get the latest version, you can:
 
 * **Play online:** Open the [webport](https://gd-webport.pages.dev/).
 * **Download the latest file:** Open [index.html](index.html) in this repository, click the download icon, and open the file in your browser.
-
-The version update notice is only displayed when an Internet connection is available.
 
 You can delete older downloaded copies once you've switched to the new version.
 
@@ -98,6 +98,12 @@ Found a bug while playing? You can report it in the repository's Issues section 
 **[Report a Bug](https://github.com/Ale7208/Geometry-Dash-webport/issues)**
 
 When reporting a bug, please explain what happened and, if possible, how to reproduce it. **If the bug is visual, please include a screenshot** to help identify the issue.
+
+### Response times
+
+I usually take about 1 day to reply to issues. If you posted one and it's been more than a day without an answer, it could be for a few reasons: I might be inactive for a while, or I may have already read it and added it to my list of issues to fix later.
+
+Fixing an issue can take me up to 2 weeks at most. I love seeing people enjoy my modded version of Bog's port, so every report matters, even if I don't reply right away.
 
 **Note:** I speak Spanish, so if your issue is written in another language, I will use a translator to understand and review it. However, reports in Spanish are preferred.
 
