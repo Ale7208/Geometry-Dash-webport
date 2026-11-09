@@ -14,6 +14,10 @@ Open the link, wait for the game to load, and start playing.
 
 The first load requires an Internet connection. To play offline, download index.html, open it in your browser once while online, and let the game finish loading. After that, you can open the same file without a connection. The online version at the link above always needs an Internet connection.
 
+### Official URL
+
+My official URL is always **https://gd-webport.pages.dev/** and it will never change. If you find a similar URL that only changes one character or has a minimal difference, it is not mine. Any `.pages.dev` address is a subdomain that anyone can create with Cloudflare Pages, so those domains don't belong to me. If you want to play my version, only trust this link.
+
 ## Updating
 
 The online version is updated whenever changes are published.
