@@ -87,7 +87,6 @@ Keep these limitations in mind:
 * **Browser cache:** Offline play depends on the cached game files remaining available.
 * **Cleared site data:** If you clear your browser's cache or site data, you may need to load the game online again.
 * **Browser changes:** The cached files are not automatically shared between browsers. Open the game in the same browser you used for the initial load.
-* **Version notices:** The update notice only appears when an Internet connection is available.
 
 Offline availability depends on your browser retaining the necessary files. It is not guaranteed if the cache is cleared or the browser removes stored resources.
 
