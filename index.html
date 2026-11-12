@@ -802,9 +802,16 @@ tx.onerror = function () { fail(tx.error || new Error('IndexedDB transaction fai
 tx.onabort = function () { fail(tx.error || new Error('IndexedDB transaction aborted')); };
 });
 }
+function normalizeSaveKey(key) {
+return String(key).replace(/\\/g, '/').replace(/^\/+/, '');
+}
+function persistDebug(message) {
+if (/[?&]debug(?:=|&|$)/.test(location.search))
+console.log('[persist] ' + message);
+}
 async function saveAppDataAsync() {
 var fs = Module.FS, files = [], paths = Object.create(null);
-if (!fs || !fs.analyzePath || !fs.analyzePath('/AppData').exists) return;
+if (!fs || !fs.analyzePath) return;
 async function scan(directory, keyPrefix) {
 var entries = fs.readdir(directory);
 for (var i = 0; i < entries.length; ++i) {
@@ -824,12 +831,13 @@ copy.set(bytes.subarray(offset, Math.min(offset + 65536, bytes.length)), offset)
 await saveYield();
 }
 files.push({ key: key, bytes: copy.buffer });
-paths[key] = true;
+paths[normalizeSaveKey(key)] = true;
 await saveYield();
 }
 }
 }
 try {
+if (fs.analyzePath('/AppData').exists)
 await scan('/AppData', 'AppData');
 } catch (e) {
 console.error('Failed to read AppData for saving:', e);
@@ -903,10 +911,12 @@ await saveYield();
 }
 for (var ki = 0; ki < savedKeys.length; ++ki) {
 var oldKey = savedKeys[ki];
-if (typeof oldKey !== 'string' || oldKey.indexOf('AppData/') !== 0 || paths[oldKey]) continue;
+var normalizedOldKey = normalizeSaveKey(oldKey);
+if (normalizedOldKey.indexOf('AppData/') !== 0 || paths[normalizedOldKey]) continue;
 try {
 var deleteTx = db.transaction('files', 'readwrite');
 await idbRequestResult(deleteTx, deleteTx.objectStore('files').delete(oldKey));
+persistDebug('deleted stale IndexedDB file ' + oldKey + ' (not present in /AppData)');
 } catch (e) {
 console.error('Failed to delete saved AppData file ' + oldKey + ':', e);
 }
@@ -970,6 +980,7 @@ Module.FS.chdir('/Resources');
 } catch (e) {
 say('FS.chdir failed: ' + e);
 }
+if (window.__gdInstallSongDeleteHook) window.__gdInstallSongDeleteHook();
 setTimeout(function () {
 restoreSaves(function () {
 window.__gdSavesRestored = true;
@@ -1022,6 +1033,80 @@ return match ? match[1] : null;
 function normalizeFsPath(path) {
 return String(path).replace(/\\/g, '/').replace(/\/+/g, '/').replace(/\/$/, '') || '/';
 }
+function songFilename(path) {
+var filename = String(path).replace(/\\/g, '/').split(/[?#]/)[0].split('/').pop();
+try { filename = decodeURIComponent(filename); }
+catch (e) {}
+return /\.mp3$/i.test(filename) ? filename.toLowerCase() : null;
+}
+function removeSavedSongRecords(filename) {
+return new Promise(function (resolve) {
+var request;
+try {
+request = indexedDB.open('gdwasm_saves', 1);
+} catch (e) {
+console.error('[audio] failed to open save database for song deletion:', e);
+resolve();
+return;
+}
+request.onupgradeneeded = function () {
+if (!request.result.objectStoreNames.contains('files'))
+request.result.createObjectStore('files');
+};
+request.onerror = function () {
+console.error('[audio] failed to open save database for song deletion:', request.error);
+resolve();
+};
+request.onsuccess = function () {
+var db = request.result, keysRequest;
+try {
+keysRequest = db.transaction('files', 'readonly').objectStore('files').getAllKeys();
+} catch (e) {
+console.error('[audio] failed to read saved song keys:', e);
+db.close();
+resolve();
+return;
+}
+keysRequest.onerror = function () {
+console.error('[audio] failed to read saved song keys:', keysRequest.error);
+db.close();
+resolve();
+};
+keysRequest.onsuccess = function () {
+var keys = keysRequest.result || [], matches = [];
+for (var i = 0; i < keys.length; ++i)
+if (songFilename(keys[i]) === filename) matches.push(keys[i]);
+if (!matches.length) {
+db.close();
+resolve();
+return;
+}
+var tx;
+try {
+tx = db.transaction('files', 'readwrite');
+var store = tx.objectStore('files');
+for (var j = 0; j < matches.length; ++j) store.delete(matches[j]);
+} catch (e) {
+console.error('[audio] failed to delete saved song records:', e);
+db.close();
+resolve();
+return;
+}
+tx.oncomplete = function () {
+for (var k = 0; k < matches.length; ++k)
+persistDebug('deleted IndexedDB song ' + matches[k]);
+db.close();
+resolve();
+};
+tx.onerror = tx.onabort = function () {
+console.error('[audio] failed to delete saved song records:', tx.error);
+db.close();
+resolve();
+};
+};
+};
+});
+}
 function readLocalSong(url) {
 var filename = audioFilename(url);
 var fs = Module.FS;
@@ -1031,8 +1116,8 @@ var roots = ['/Resources', '/', '/AppData', cwd];
 var tried = [];
 var scanErrors = [];
 var checked = Object.create(null);
-function readPath(path) {
-path = normalizeFsPath(path);
+function readPath(path, preservePath) {
+path = preservePath ? String(path) : normalizeFsPath(path);
 if (checked[path]) return null;
 checked[path] = true;
 tried.push(path);
@@ -1051,7 +1136,6 @@ if (direct) return direct;
 var mp3Files = [];
 var visited = Object.create(null);
 function scan(directory) {
-directory = normalizeFsPath(directory);
 if (visited[directory]) return null;
 visited[directory] = true;
 tried.push(directory);
@@ -1077,9 +1161,9 @@ if (fs.isLink && fs.isLink(stat.mode)) continue;
 if (fs.isDir(stat.mode)) {
 var found = scan(path);
 if (found) return found;
-} else if (/\.mp3$/i.test(name)) {
-if (name.toLowerCase() === filename.toLowerCase()) {
-var song = readPath(path);
+} else if (songFilename(name)) {
+if (songFilename(name) === filename.toLowerCase()) {
+var song = readPath(path, true);
 if (song) return song;
 }
 mp3Files.push(path);
@@ -1097,6 +1181,73 @@ scanErrors: scanErrors
 });
 return null;
 }
+function removeMatchingSongFiles(filename, unlinkFile) {
+var fs = Module.FS;
+if (!fs || !fs.readdir || !fs.unlink) return 0;
+var paths = [], visited = Object.create(null);
+function scan(directory) {
+if (visited[directory]) return;
+visited[directory] = true;
+var entries;
+try {
+entries = fs.readdir(directory);
+} catch (e) {
+console.warn('[audio] failed to scan for deleted song in ' + directory, e);
+return;
+}
+for (var i = 0; i < entries.length; ++i) {
+var name = entries[i];
+if (name === '.' || name === '..') continue;
+var path = directory === '/' ? '/' + name : directory + '/' + name;
+var stat;
+try {
+stat = fs.lstat ? fs.lstat(path) : fs.stat(path);
+} catch (e) {
+console.warn('[audio] failed to inspect ' + path + ' while deleting song', e);
+continue;
+}
+if (fs.isLink && fs.isLink(stat.mode)) continue;
+if (fs.isDir(stat.mode)) scan(path);
+else if (fs.isFile(stat.mode) && songFilename(name) === filename)
+paths.push(path);
+}
+}
+scan('/');
+var removed = 0;
+for (var j = 0; j < paths.length; ++j) {
+try {
+(unlinkFile || fs.unlink).call(fs, paths[j]);
+removed++;
+persistDebug('deleted virtual FS song ' + paths[j]);
+} catch (e) {
+console.error('[audio] failed to delete virtual FS song ' + paths[j], e);
+}
+}
+return removed;
+}
+window.__gdInstallSongDeleteHook = function () {
+var fs = Module.FS;
+if (!fs || !fs.unlink || fs.__gdSongDeleteHook) return;
+var nativeUnlink = fs.unlink;
+fs.unlink = function (path) {
+var filename = songFilename(path), result, unlinkError;
+try {
+result = nativeUnlink.apply(this, arguments);
+} catch (e) {
+unlinkError = e;
+}
+if (!filename) {
+if (unlinkError) throw unlinkError;
+return result;
+}
+if (!unlinkError) persistDebug('deleted virtual FS song path ' + path);
+var removed = removeMatchingSongFiles(filename, nativeUnlink);
+removeSavedSongRecords(filename);
+if (unlinkError && !removed) throw unlinkError;
+return result;
+};
+fs.__gdSongDeleteHook = true;
+};
 window.fetch = function (input, init) {
 var url = typeof input === 'string' ? input : input && (input.url || input.href);
 var method = (init && init.method) || (input && input.method) || 'GET';
@@ -1364,15 +1515,27 @@ gdStart();
     if (!down) lp |= -1073741824;
     Module.gdKeyState[vk] = down ? 1 : 0;
     if (down) keys.set(vk, lp); else keys.delete(vk);
-    push(down ? 0x100 : 0x101, vk, lp, timestamp(e));
+    var time = timestamp(e);
+    push(down ? 0x100 : 0x101, vk, lp, time);
     if (down) {
       var ch = e.key && e.key.length === 1 ? e.key.charCodeAt(0) : e.code === 'Backspace' ? 8 : e.code === 'Enter' ? 13 : 0;
-      if (ch) push(0x102, ch, lp, timestamp(e));
+      if (ch) push(0x102, ch, lp, time);
     }
     if (VK[e.code]) e.preventDefault();
   }
   window.addEventListener('keydown', function (e) { key(e, true); }, {capture: true});
   window.addEventListener('keyup', function (e) { key(e, false); }, {capture: true});
+  window.addEventListener('paste', function (e) {
+    if (!ready() || document.activeElement !== el || !e.clipboardData) return;
+    var text;
+    try { text = e.clipboardData.getData('text/plain'); } catch (_) { return; }
+    if (typeof text !== 'string' || !text.length) return;
+    e.preventDefault();
+    text = text.replace(/[\r\n\u2028\u2029]/g, '');
+    for (var i = 0; i < text.length; i++) {
+      push(0x102, text.charCodeAt(i), 1, timestamp(e));
+    }
+  }, {capture: true});
   function releaseAll() {
     if (benchmark) {
       benchmark = null;
