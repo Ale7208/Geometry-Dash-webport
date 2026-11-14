@@ -72,7 +72,7 @@ The game can also be played on mobile phones. Performance, controls, and compati
 
 **The game won't load offline:** Make sure you're opening the downloaded `index.html` file and that you've already opened it once with an Internet connection and let the game finish loading.
 
-**Low performance:** Close other applications or try another browser.
+**Low performance:** Close other applications or try another browser. If the game still lags, add `?quality=low` to the end of the URL: `https://gd-webport.pages.dev/?quality=low`. Use `?quality=high` to go back to the normal quality.
 
 **Changes aren't showing up:** Force a reload with `Ctrl + F5`.
 
